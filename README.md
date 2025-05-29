@@ -100,6 +100,44 @@ backend/
 - Passwords are hashed with bcrypt
 - JWT secrets must be kept safe
 
+## Deployment to Heroku
+
+### Prerequisites
+- Heroku CLI installed
+- A MongoDB Atlas (or other remote) database URI
+
+### Steps
+1. Log in to Heroku and create a new app:
+   ```bash
+   heroku login
+   heroku create your-app-name
+   ```
+2. Add the MongoDB add-on or set your remote MongoDB URI:
+   ```bash
+   heroku config:set MONGODB_URI=your_mongodb_atlas_uri
+   ```
+3. Set other required environment variables:
+   ```bash
+   heroku config:set JWT_SECRET=your_jwt_secret
+   heroku config:set JWT_REFRESH_SECRET=your_refresh_secret
+   ```
+4. Push your code to Heroku:
+   ```bash
+   git push heroku main
+   ```
+5. The server will start automatically using the `Procfile`.
+
+### Required Environment Variables
+- `MONGODB_URI` — MongoDB connection string (use Heroku config or add-on)
+- `JWT_SECRET` — Secret for signing JWT tokens
+- `JWT_REFRESH_SECRET` — Secret for refresh tokens
+- `PORT` — (Optional) Heroku sets this automatically
+
+### Notes
+- Ensure your code uses `process.env.MONGODB_URI` for the database connection.
+- The included `Procfile` tells Heroku to run `node server.js`.
+- For static file serving or EJS views, ensure your Express app is configured to serve them in production.
+
 ## License
 MIT
 
