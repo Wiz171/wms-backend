@@ -21,6 +21,7 @@ const { checkPermission, getUserPermissions, MODULES, ACTIONS } = require('../mi
 const { validate, userValidation, productValidation, customerValidation } = require('../middleware/validation');
 const { UnauthorizedError } = require('../utils/errors');
 const roleController = require('../controller/roleController');
+const logController = require('../controller/logController');
 
 // User Profile routes
 const userProfileRouter = require('./userProfile');
@@ -252,6 +253,9 @@ route.delete('/api/roles/:role', checkPermission(MODULES.USERS, ACTIONS.MANAGE),
 route.post('/api/roles/:role/permissions', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.assignPermissions);
 route.post('/api/users/:id/role', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.assignRole);
 route.get('/api/roles', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.listRoles);
+
+// Log API
+route.get('/api/logs', logController.getLogs);
 
 // Login route with validation only (rate limiting removed)
 route.post('/login', loginValidation, async (req, res) => {
