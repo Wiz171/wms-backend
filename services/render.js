@@ -9,7 +9,12 @@ exports.homeRoutes = (req, res) => {
             res.render('index', { users: response.data });
         })
         .catch(err => {
-            res.send(err);
+            // If 401 Unauthorized, show a friendly message
+            if (err.response && err.response.status === 401) {
+                res.render('index', { users: [], error: 'Unauthorized: Please log in to view users.' });
+            } else {
+                res.send(err);
+            }
         });
 };
 
