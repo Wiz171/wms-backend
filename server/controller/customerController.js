@@ -1,4 +1,5 @@
 const Customer = require('../model/customer');
+const { logAction } = require('../utils/logAction');
 
 // Create a new customer
 exports.create = async (req, res) => {
@@ -15,6 +16,14 @@ exports.create = async (req, res) => {
         console.log('Customer create request:', customerData); // Debug log
         const customer = new Customer(customerData);
         await customer.save();
+        // Log action
+        await logAction({
+          action: 'create',
+          entity: 'customer',
+          entityId: customer._id,
+          user: req.user,
+          details: { email: customer.email, name: customer.name }
+        });
         console.log('Customer saved:', customer); // Debug log
         res.status(201).json({ message: 'Customer created', customer });
     } catch (err) {

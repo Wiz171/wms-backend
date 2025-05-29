@@ -1,6 +1,7 @@
 const express = require('express');
 const Order = require('../model/order');
 const mongoose = require('mongoose');
+const { logAction } = require('../utils/logAction');
 
 // Controller methods
 const getOrders = async (req, res) => {
@@ -58,6 +59,14 @@ const createOrder = async (req, res) => {
 
         const order = new Order(orderData);
         await order.save();
+        // Log action
+        await logAction({
+          action: 'create',
+          entity: 'order',
+          entityId: order._id,
+          user: req.user,
+          details: { customerName, total }
+        });
         
         // Populate the references after saving
         const populatedOrder = await Order.findById(order._id)

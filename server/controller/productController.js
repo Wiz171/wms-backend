@@ -1,4 +1,5 @@
 const Product = require('../model/product');
+const { logAction } = require('../utils/logAction');
 
 // Create a new product
 exports.create = async (req, res) => {
@@ -14,6 +15,14 @@ exports.create = async (req, res) => {
         }
         const product = new Product(productData);
         await product.save();
+        // Log action
+        await logAction({
+          action: 'create',
+          entity: 'product',
+          entityId: product._id,
+          user: req.user,
+          details: { name: product.name }
+        });
         res.status(201).json({ message: 'Product created', product });
     } catch (err) {
         res.status(500).send('Error creating product: ' + err.message);
