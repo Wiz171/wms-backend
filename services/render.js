@@ -1,6 +1,6 @@
 const axios = require('axios');
 
-const BASE_URL = process.env.APP_URL || `http://localhost:${process.env.PORT || 8080}`;
+const BASE_URL = (process.env.APP_URL || `http://localhost:${process.env.PORT || 8080}`).replace(/\/$/, '');
 
 exports.homeRoutes = (req, res) => {
     //make a get request
