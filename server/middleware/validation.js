@@ -69,9 +69,7 @@ const productValidation = {
       .withMessage('Product name must be at least 2 characters long'),
     body('description')
       .optional()
-      .trim()
-      .isLength({ min: 10 })
-      .withMessage('Description must be at least 10 characters long'),
+      .trim(),
     body('price')
       .isFloat({ min: 0 })
       .withMessage('Price must be a positive number'),
@@ -94,9 +92,7 @@ const productValidation = {
       .withMessage('Product name must be at least 2 characters long'),
     body('description')
       .optional()
-      .trim()
-      .isLength({ min: 10 })
-      .withMessage('Description must be at least 10 characters long'),
+      .trim(),
     body('price')
       .optional()
       .isFloat({ min: 0 })
@@ -177,4 +173,4 @@ module.exports = {
   productValidation,
   customerValidation,
   loginValidation
-}; 
+};

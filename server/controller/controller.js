@@ -32,10 +32,31 @@ exports.create = async (req, res) => {
 // Find users
 exports.find = async (req, res) => {
     try {
-        const users = await User.find({}, '-password');
+        let query = {};
+        // If manager, exclude superadmin users
+        if (req.user.role === 'manager') {
+            query = { role: { $ne: 'superadmin' } };
+        }
+        const users = await User.find(query, '-password');
         res.json(users);
     } catch (err) {
         res.status(500).send('Error fetching users: ' + err.message);
+    }
+};
+
+// Get single user (for read/edit)
+exports.getUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await User.findById(id, '-password');
+        // If manager, block access to superadmin info
+        if (req.user.role === 'manager' && user && user.role === 'superadmin') {
+            return res.status(403).send('Managers are not allowed to view superadmin info');
+        }
+        if (!user) return res.status(404).send('User not found');
+        res.json(user);
+    } catch (err) {
+        res.status(500).send('Error fetching user: ' + err.message);
     }
 };
 
@@ -44,6 +65,15 @@ exports.update = async (req, res) => {
     try {
         const { id } = req.params;
         const update = req.body;
+        // Prevent manager from editing superadmin's role
+        if (req.user.role === 'manager' && update.role && update.role === 'superadmin') {
+            return res.status(403).send('Managers cannot assign or edit superadmin role');
+        }
+        // Prevent manager from editing a superadmin user
+        const targetUser = await User.findById(id);
+        if (req.user.role === 'manager' && targetUser && targetUser.role === 'superadmin') {
+            return res.status(403).send('Managers cannot edit superadmin users');
+        }
         const user = await User.findByIdAndUpdate(id, update, { new: true });
         if (!user) return res.status(404).send('User not found');
         res.json({ message: 'User updated', user });

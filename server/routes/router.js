@@ -20,6 +20,11 @@ const { verifyToken } = require('../middleware/auth');
 const { checkPermission, getUserPermissions, MODULES, ACTIONS } = require('../middleware/rbac');
 const { validate, userValidation, productValidation, customerValidation } = require('../middleware/validation');
 const { UnauthorizedError } = require('../utils/errors');
+const roleController = require('../controller/roleController');
+
+// User Profile routes
+const userProfileRouter = require('./userProfile');
+route.use('/api/profile', userProfileRouter);
 
 if (!process.env.JWT_SECRET) {
   console.error('JWT_SECRET is not set in environment variables');
@@ -40,6 +45,21 @@ route.use('/api', verifyToken);
 // Apply permission middleware to get user's allowed modules
 route.use('/api', getUserPermissions);
 
+// Get current user info with permissions (must be before /:id route)
+route.get('/api/users/me', verifyToken, (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ status: 'error', message: 'Not authenticated' });
+  }
+  const { password, ...userInfo } = req.user.toObject ? req.user.toObject() : req.user;
+  res.json({
+    status: 'success',
+    data: {
+      ...userInfo,
+      permissions: res.locals.userPermissions
+    }
+  });
+});
+
 // User routes
 route.post('/api/users',
   checkPermission(MODULES.USERS, ACTIONS.CREATE),
@@ -50,6 +70,11 @@ route.post('/api/users',
 route.get('/api/users',
   checkPermission(MODULES.USERS, ACTIONS.READ),
   controller.find
+);
+
+route.get('/api/users/:id',
+  checkPermission(MODULES.USERS, ACTIONS.READ),
+  controller.getUser
 );
 
 route.put('/api/users/:id',
@@ -221,17 +246,12 @@ route.delete('/api/orders/:id',
   orderController.deleteOrder
 );
 
-// Get current user info with permissions
-route.get('/api/users/me', (req, res) => {
-  if (!req.user) {
-    throw new UnauthorizedError('Not authenticated');
-  }
-  const { password, ...userInfo } = req.user.toObject ? req.user.toObject() : req.user;
-  res.json({
-    ...userInfo,
-    permissions: res.locals.userPermissions
-  });
-});
+// Role management routes (superadmin only)
+route.post('/api/roles', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.createRole);
+route.delete('/api/roles/:role', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.deleteRole);
+route.post('/api/roles/:role/permissions', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.assignPermissions);
+route.post('/api/users/:id/role', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.assignRole);
+route.get('/api/roles', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.listRoles);
 
 // Login route with validation only (rate limiting removed)
 route.post('/login', loginValidation, async (req, res) => {
