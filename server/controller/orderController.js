@@ -92,10 +92,17 @@ const updateOrder = async (req, res) => {
         const order = await Order.findByIdAndUpdate(id, req.body, { new: true })
             .populate('items.productId')
             .populate('createdBy', '-password');
-            
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
+        // Log action
+        await logAction({
+          action: 'update',
+          entity: 'order',
+          entityId: order._id,
+          user: req.user,
+          details: { updatedFields: Object.keys(req.body) }
+        });
         res.json(order);
     } catch (err) {
         console.error('Error updating order:', err);
@@ -110,6 +117,14 @@ const deleteOrder = async (req, res) => {
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
+        // Log action
+        await logAction({
+          action: 'delete',
+          entity: 'order',
+          entityId: id,
+          user: req.user,
+          details: { customerName: order.customerName, total: order.total }
+        });
         res.status(204).send();
     } catch (err) {
         console.error('Error deleting order:', err);

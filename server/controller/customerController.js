@@ -49,6 +49,14 @@ exports.update = async (req, res) => {
         const update = req.body;
         const customer = await Customer.findByIdAndUpdate(id, update, { new: true });
         if (!customer) return res.status(404).send('Customer not found');
+        // Log action
+        await logAction({
+          action: 'update',
+          entity: 'customer',
+          entityId: customer._id,
+          user: req.user,
+          details: { updatedFields: Object.keys(update) }
+        });
         res.json({ message: 'Customer updated', customer });
     } catch (err) {
         res.status(500).send('Error updating customer: ' + err.message);
@@ -61,6 +69,14 @@ exports.delete = async (req, res) => {
         const { id } = req.params;
         const customer = await Customer.findByIdAndDelete(id);
         if (!customer) return res.status(404).send('Customer not found');
+        // Log action
+        await logAction({
+          action: 'delete',
+          entity: 'customer',
+          entityId: id,
+          user: req.user,
+          details: { email: customer.email, name: customer.name }
+        });
         res.json({ message: 'Customer deleted', customer });
     } catch (err) {
         res.status(500).send('Error deleting customer: ' + err.message);

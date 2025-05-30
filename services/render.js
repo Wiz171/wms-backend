@@ -3,31 +3,14 @@ const axios = require('axios');
 const BASE_URL = (process.env.APP_URL || `http://localhost:${process.env.PORT || 8080}`).replace(/\/$/, '');
 
 exports.homeRoutes = (req, res) => {
-    //make a get request
-    axios.get(`${BASE_URL}/api/users`)
-        .then(function(response){
-            res.render('index', { users: response.data });
-        })
-        .catch(err => {
-            // If 401 Unauthorized, show a friendly message
-            if (err.response && err.response.status === 401) {
-                res.render('index', { users: [], error: 'Unauthorized: Please log in to view users.' });
-            } else {
-                res.send(err);
-            }
-        });
+    // Remove all rendering and sending for backend API-only deployment
+    res.status(404).json({ message: 'Not found' });
 };
 
 exports.add_user = (req, res) => {
-    res.render('add_user');
+    res.status(404).json({ message: 'Not found' });
 };
 
 exports.update_user = (req, res) => {
-    axios.get(`${BASE_URL}/api/users`, { params: { id: req.query.id } })
-        .then(function(userdata){
-            res.render("update_user", { user: userdata.data });
-        })
-        .catch(err => {
-            res.send(err);
-        });
+    res.status(404).json({ message: 'Not found' });
 };

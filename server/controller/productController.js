@@ -46,6 +46,14 @@ exports.update = async (req, res) => {
         const update = req.body;
         const product = await Product.findByIdAndUpdate(id, update, { new: true });
         if (!product) return res.status(404).send('Product not found');
+        // Log action
+        await logAction({
+          action: 'update',
+          entity: 'product',
+          entityId: product._id,
+          user: req.user,
+          details: { updatedFields: Object.keys(update) }
+        });
         res.json({ message: 'Product updated', product });
     } catch (err) {
         res.status(500).send('Error updating product: ' + err.message);
@@ -58,6 +66,14 @@ exports.delete = async (req, res) => {
         const { id } = req.params;
         const product = await Product.findByIdAndDelete(id);
         if (!product) return res.status(404).send('Product not found');
+        // Log action
+        await logAction({
+          action: 'delete',
+          entity: 'product',
+          entityId: id,
+          user: req.user,
+          details: { name: product.name }
+        });
         res.json({ message: 'Product deleted', product });
     } catch (err) {
         res.status(500).send('Error deleting product: ' + err.message);
