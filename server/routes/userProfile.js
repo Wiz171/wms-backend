@@ -22,6 +22,22 @@ router.put('/me', verifyToken, async (req, res) => {
     delete updates.password; // Prevent password change from here
     const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true }).select('-password');
     if (!user) return res.status(404).json({ message: 'User not found' });
+
+    // Log profile update
+    const { logAction } = require('../utils/logAction');
+    await logAction({
+      action: 'update',
+      entity: 'user-profile',
+      entityId: user._id,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      details: { updatedFields: Object.keys(updates) }
+    });
+
     res.json(user);
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
@@ -48,6 +64,22 @@ router.post('/change-password', verifyToken, async (req, res) => {
     }
     user.password = newPassword;
     await user.save();
+
+    // Log password change
+    const { logAction } = require('../utils/logAction');
+    await logAction({
+      action: 'update',
+      entity: 'user-password',
+      entityId: user._id,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      },
+      details: { message: 'Password changed' }
+    });
+
     res.json({ message: 'Password changed successfully' });
   } catch (err) {
     res.status(500).json({ message: 'Server error' });
