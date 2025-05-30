@@ -44,6 +44,13 @@ exports.update = async (req, res) => {
     try {
         const { id } = req.params;
         const update = req.body;
+        // Prevent manager from editing another manager or superadmin
+        if (req.user.role === 'manager') {
+            const targetUser = await Product.findById(id).populate('createdBy');
+            if (targetUser && targetUser.createdBy && (targetUser.createdBy.role === 'manager' || targetUser.createdBy.role === 'superadmin')) {
+                return res.status(403).json({ message: 'Managers cannot edit users with manager or superadmin role.' });
+            }
+        }
         const product = await Product.findByIdAndUpdate(id, update, { new: true });
         if (!product) return res.status(404).send('Product not found');
         // Log action

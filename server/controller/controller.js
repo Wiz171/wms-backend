@@ -65,14 +65,14 @@ exports.update = async (req, res) => {
     try {
         const { id } = req.params;
         const update = req.body;
-        // Prevent manager from editing superadmin's role
-        if (req.user.role === 'manager' && update.role && update.role === 'superadmin') {
-            return res.status(403).send('Managers cannot assign or edit superadmin role');
-        }
-        // Prevent manager from editing a superadmin user
+        // Prevent manager from editing superadmin or another manager
         const targetUser = await User.findById(id);
-        if (req.user.role === 'manager' && targetUser && targetUser.role === 'superadmin') {
-            return res.status(403).send('Managers cannot edit superadmin users');
+        if (req.user.role === 'manager' && targetUser && (targetUser.role === 'superadmin' || targetUser.role === 'manager')) {
+            return res.status(403).send('Managers cannot edit users with manager or superadmin role');
+        }
+        // Prevent manager from assigning superadmin or manager role
+        if (req.user.role === 'manager' && update.role && (update.role === 'superadmin' || update.role === 'manager')) {
+            return res.status(403).send('Managers cannot assign manager or superadmin role');
         }
         const user = await User.findByIdAndUpdate(id, update, { new: true });
         if (!user) return res.status(404).send('User not found');
