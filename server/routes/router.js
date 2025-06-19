@@ -22,6 +22,7 @@ const { validate, userValidation, productValidation, customerValidation } = requ
 const { UnauthorizedError } = require('../utils/errors');
 const roleController = require('../controller/roleController');
 const logController = require('../controller/logController');
+const taskRoutes = require('./taskRoutes');
 
 // User Profile routes
 const userProfileRouter = require('./userProfile');

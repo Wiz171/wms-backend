@@ -43,7 +43,11 @@ exports.find = async (req, res) => {
 exports.update = async (req, res) => {
     try {
         const { id } = req.params;
-        const update = req.body;
+        let update = req.body;
+        // Defensive: Remove specs if it's not a non-empty object
+        if ('specs' in update && (typeof update.specs !== 'object' || Array.isArray(update.specs) || Object.keys(update.specs).length === 0)) {
+            delete update.specs;
+        }
         // Prevent manager from editing another manager or superadmin
         if (req.user.role === 'manager') {
             const targetUser = await Product.findById(id).populate('createdBy');
@@ -63,6 +67,7 @@ exports.update = async (req, res) => {
         });
         res.json({ message: 'Product updated', product });
     } catch (err) {
+        console.error('Error updating product:', err);
         res.status(500).send('Error updating product: ' + err.message);
     }
 };

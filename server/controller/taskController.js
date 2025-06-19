@@ -1,58 +1,104 @@
 const express = require('express');
 const Task = require('../model/task');
+const PurchaseOrder = require('../model/purchaseOrder');
+const { body, param, validationResult } = require('express-validator');
 
-// Get all tasks
-const getTasks = async (req, res) => {
-    try {
-        const tasks = await Task.find();
-        res.json(tasks);
-    } catch (err) {
-        res.status(500).json({ message: 'Error fetching tasks: ' + err.message });
+// POST /api/tasks - Create a new task
+exports.createTask = [
+  body('purchaseOrderId').isMongoId(),
+  body('type').isIn(['Picking', 'Packing', 'Quality Check', 'Shipping']),
+  body('assignedTo').isString().notEmpty(),
+  body('details').isString().notEmpty(),
+  body('deadline').isISO8601(),
+  body('status').optional().isIn(['Pending', 'In Progress', 'Completed']),
+  async (req, res) => {
+    // Validate input
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-};
-
-// Create a new task
-const createTask = async (req, res) => {
-    try {
-        const newTask = new Task(req.body);
-        const savedTask = await newTask.save();
-        res.status(201).json(savedTask);
-    } catch (err) {
-        res.status(400).json({ message: 'Error creating task: ' + err.message });
+    // Check purchase order exists
+    const { purchaseOrderId, type, assignedTo, details, deadline, status } = req.body;
+    const po = await PurchaseOrder.findById(purchaseOrderId);
+    if (!po) {
+      return res.status(400).json({ message: 'Invalid purchaseOrderId' });
     }
-};
+    // Create task
+    const task = new Task({
+      purchaseOrderId, type, assignedTo, details, deadline, status
+    });
+    await task.save();
+    res.status(201).json(task);
+  }
+];
 
-// Update a task
-const updateTask = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const updatedTask = await Task.findByIdAndUpdate(id, req.body, { new: true });
-        if (!updatedTask) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
-        res.json(updatedTask);
-    } catch (err) {
-        res.status(400).json({ message: 'Error updating task: ' + err.message });
+// GET /api/tasks/:id - Retrieve a task by _id
+exports.getTask = [
+  param('id').isMongoId(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-};
+    const task = await Task.findById(req.params.id);
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+    res.json(task);
+  }
+];
 
-// Delete a task
-const deleteTask = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const deletedTask = await Task.findByIdAndDelete(id);
-        if (!deletedTask) {
-            return res.status(404).json({ message: 'Task not found' });
-        }
-        res.status(204).send();
-    } catch (err) {
-        res.status(400).json({ message: 'Error deleting task: ' + err.message });
+// PUT /api/tasks/:id - Update a task
+exports.updateTask = [
+  param('id').isMongoId(),
+  body('type').optional().isIn(['Picking', 'Packing', 'Quality Check', 'Shipping']),
+  body('status').optional().isIn(['Pending', 'In Progress', 'Completed']),
+  body('assignedTo').optional().isString().notEmpty(),
+  body('details').optional().isString().notEmpty(),
+  body('deadline').optional().isISO8601(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
     }
-};
+    const update = req.body;
+    const task = await Task.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+    res.json(task);
+  }
+];
 
-module.exports = {
-    getTasks,
-    createTask,
-    updateTask,
-    deleteTask
+// DELETE /api/tasks/:id - Delete a task
+exports.deleteTask = [
+  param('id').isMongoId(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) return res.status(404).json({ message: 'Task not found' });
+    res.status(204).send();
+  }
+];
+
+// GET /api/purchase-orders/:purchaseOrderId/tasks - List all tasks for a purchase order
+exports.getTasksByPurchaseOrder = [
+  param('purchaseOrderId').isMongoId(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const tasks = await Task.find({ purchaseOrderId: req.params.purchaseOrderId });
+    res.json(tasks);
+  }
+];
+
+// GET /api/tasks - List all tasks (for admin/manager views)
+exports.getTasks = async (req, res) => {
+  try {
+    const tasks = await Task.find();
+    res.json(tasks);
+  } catch (err) {
+    res.status(500).json({ message: 'Error fetching tasks: ' + err.message });
+  }
 };

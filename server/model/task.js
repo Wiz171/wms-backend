@@ -1,15 +1,53 @@
 const mongoose = require('mongoose');
+const { Schema } = mongoose;
 
-const taskSchema = new mongoose.Schema({
-    title: { type: String, required: true },
-    status: { type: String, enum: ['pending', 'in-progress', 'completed'], default: 'pending' },
-    priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-    assignedTo: { type: String },
-    createdAt: { type: Date, default: Date.now },
-    updatedAt: { type: Date, default: Date.now },
-    order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' } // Link to an order (optional)
-}, { timestamps: true });
+const taskSchema = new Schema({
+  purchaseOrderId: {
+    type: Schema.Types.ObjectId,
+    ref: 'PurchaseOrder',
+    required: true
+  },
+  type: {
+    type: String,
+    enum: ['Picking', 'Packing', 'Quality Check', 'Shipping'],
+    required: true
+  },
+  assignedTo: {
+    type: String,
+    required: true
+  },
+  details: {
+    type: String,
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['Pending', 'In Progress', 'Completed'],
+    default: 'Pending',
+    required: true
+  },
+  deadline: {
+    type: Date,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
 
-const Task = mongoose.model('Task', taskSchema);
+taskSchema.pre('save', function(next) {
+  this.updatedAt = Date.now();
+  next();
+});
 
-module.exports = Task;
+taskSchema.pre('findOneAndUpdate', function(next) {
+  this.set({ updatedAt: Date.now() });
+  next();
+});
+
+module.exports = mongoose.model('Task', taskSchema);
