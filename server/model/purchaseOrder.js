@@ -2,10 +2,10 @@ const mongoose = require('mongoose');
 
 const purchaseOrderSchema = new mongoose.Schema({
     items: [{
-        product: { type: mongoose.Schema.Types.ObjectId, ref: 'Products', required: true },
+        product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
         quantity: { type: Number, required: true, min: 1 }
     }],
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     date: { type: Date, default: Date.now },
     deliveryDate: { type: Date, required: true },
     notes: String

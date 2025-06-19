@@ -5,7 +5,7 @@ const logSchema = new mongoose.Schema({
   entity: { type: String, required: true }, // e.g. 'product', 'customer', 'order', etc.
   entityId: { type: mongoose.Schema.Types.ObjectId, required: false },
   user: {
-    _id: { type: mongoose.Schema.Types.ObjectId, ref: 'users', required: true },
+    _id: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String },
     email: { type: String },
     role: { type: String }
