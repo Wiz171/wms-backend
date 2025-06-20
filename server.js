@@ -26,24 +26,37 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'https://amazing-swan-11178c.netlify.app' // Netlify production frontend
+  'https://amazing-swan-11178c.netlify.app', // Netlify production frontend
+  'https://amazing-swan-11178c.netlify.app/' // With trailing slash for consistency
 ];
+
+// Enable CORS pre-flight requests
+app.options('*', cors());
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    if (allowedOrigins.indexOf(origin) === -1) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    // Check if origin is in allowedOrigins (case-insensitive and ignore trailing slashes)
+    const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+    const isAllowed = allowedOrigins.some(allowedOrigin => 
+      allowedOrigin.toLowerCase() === normalizedOrigin.toLowerCase() ||
+      (allowedOrigin.endsWith('/') && allowedOrigin.slice(0, -1).toLowerCase() === normalizedOrigin.toLowerCase())
+    );
+    
+    if (!isAllowed) {
+      const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+      console.error('CORS Error:', msg);
       return callback(new Error(msg), false);
     }
     return callback(null, true);
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'Access-Control-Allow-Credentials'],
+  maxAge: 86400 // 24 hours
 };
 
 // Apply CORS before other middleware
