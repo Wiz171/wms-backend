@@ -26,7 +26,7 @@ const allowedOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:3000',
   'http://127.0.0.1:3000',
-  'https://wms-rd.netlify.app' // Netlify production frontend
+  'https://amazing-swan-11178c.netlify.app' // Netlify production frontend
 ];
 
 const corsOptions = {
