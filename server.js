@@ -30,47 +30,32 @@ const allowedOrigins = [
   'https://amazing-swan-11178c.netlify.app/'
 ];
 
-// Enhanced CORS middleware
-const corsMiddleware = (req, res, next) => {
+// Simple CORS middleware
+app.use((req, res, next) => {
   const origin = req.headers.origin;
   
   // Log incoming request for debugging
-  console.log('Incoming request:', {
-    method: req.method,
-    path: req.path,
-    origin: origin,
-    headers: req.headers
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`, {
+    origin,
+    'user-agent': req.headers['user-agent']
   });
 
-  // Always set Vary header
+  // Allow all origins for now (restrict in production)
+  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Vary', 'Origin');
-  
-  // Check if origin is allowed
-  const isAllowedOrigin = origin && allowedOrigins.some(allowed => {
-    const normalizedOrigin = origin.endsWith('/') ? origin.slice(0, -1) : origin;
-    const normalizedAllowed = allowed.endsWith('/') ? allowed.slice(0, -1) : allowed;
-    return normalizedOrigin === normalizedAllowed;
-  });
-
-  // Set CORS headers for all responses
-  if (isAllowedOrigin) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
-  }
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
     res.setHeader('Access-Control-Max-Age', '86400');
+    res.setHeader('Content-Length', '0');
     return res.status(204).end();
   }
-  
-  // Set CORS headers for actual requests
-  res.setHeader('Access-Control-Expose-Headers', 'Content-Range, X-Content-Range');
-  
+
   next();
-};
+});
 
 // Apply CORS middleware to all routes
 app.use(corsMiddleware);
