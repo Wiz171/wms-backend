@@ -30,7 +30,7 @@ const allowedOrigins = [
   'https://amazing-swan-11178c.netlify.app/'
 ];
 
-// Simple CORS middleware
+// CORS configuration
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   
@@ -56,9 +56,6 @@ app.use((req, res, next) => {
 
   next();
 });
-
-// Apply CORS middleware to all routes
-app.use(corsMiddleware);
 
 // Security middleware
 app.use(helmet({
