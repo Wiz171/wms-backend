@@ -2,7 +2,7 @@ services:
   - type: web
     name: wms-backend
     env: node
-    buildCommand: npm install
+    buildCommand: npm install --production=false && npm run build
     startCommand: node server.js
     plan: free
     region: oregon

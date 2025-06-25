@@ -2,10 +2,10 @@
   "name": "wms-backend",
   "version": "1.0.0",
   "description": "Warehouse Management System Backend",
-  "main": "server.js",
+  "main": "./server.js",
   "scripts": {
     "start": "node server.js",
-    "build": "echo 'Build completed'",
+    "build": "mkdir -p build && echo '// This file is required for Render deployment' > build/index.js && echo 'Build completed'",
     "dev": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 0",
     "render-build": "npm install && npm run build"
