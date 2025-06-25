@@ -2,8 +2,8 @@ services:
   - type: web
     name: wms-backend
     env: node
-    buildCommand: npm install
-    startCommand: npm start
+    buildCommand: ./render-build.sh
+    startCommand: node server.js
     envVars:
       - key: NODE_ENV
         value: production
