@@ -10,7 +10,7 @@ const { apiLimiter } = require('./server/middleware/rateLimiter');
 require("dotenv").config({ path: "./config.env" });
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 10000;
 
 // Trust Heroku proxy for correct client IPs
 app.set('trust proxy', 1);
@@ -159,6 +159,38 @@ app.use((req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
+// Start server only when we have a valid database connection
+const startServer = () => {
+  app.listen(PORT, () => {
+    console.log(`Server is running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  });
+};
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error(err.name, err.message);
+  // Close server & exit process
+  server.close(() => {
+    process.exit(1);
+  });
 });
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.error(err.name, err.message);
+  process.exit(1);
+});
+
+// Start the server after database connection is established
+if (process.env.NODE_ENV !== 'test') {
+  connectDB()
+    .then(() => startServer())
+    .catch(err => {
+      console.error('Database connection failed:', err);
+      process.exit(1);
+    });
+}
+
+module.exports = app; // For testing

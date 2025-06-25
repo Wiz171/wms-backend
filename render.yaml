@@ -1,0 +1,27 @@
+services:
+  - type: web
+    name: wms-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        fromDatabase:
+          name: wms-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 90d
+      - key: PORT
+        value: 10000
+      - key: ALLOWED_ORIGINS
+        value: https://your-frontend-domain.com,https://your-netlify-app.netlify.app
+
+databases:
+  - name: wms-db
+    databaseName: wms
+    user: wms_user
+    plan: free
