@@ -2,11 +2,18 @@ services:
   - type: web
     name: wms-backend
     env: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install
     startCommand: node server.js
+    plan: free
+    region: oregon
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
+      - key: NPM_CONFIG_PRODUCTION
+        value: false
       - key: MONGODB_URI
         fromDatabase:
           name: wms-db
@@ -15,12 +22,9 @@ services:
         generateValue: true
       - key: JWT_EXPIRES_IN
         value: 90d
-      - key: PORT
-        value: 10000
       - key: ALLOWED_ORIGINS
         value: https://your-frontend-domain.com,https://your-netlify-app.netlify.app
 
-# Database configuration
 databases:
   - name: wms-db
     databaseName: wms

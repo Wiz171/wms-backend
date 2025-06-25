@@ -159,11 +159,39 @@ app.use((req, res) => {
   });
 });
 
+// Create HTTP server
+const http = require('http');
+const server = http.createServer(app);
+
 // Start server only when we have a valid database connection
 const startServer = () => {
-  app.listen(PORT, () => {
-    console.log(`Server is running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+  // Start the server on all network interfaces (0.0.0.0)
+  server.listen(PORT, '0.0.0.0', () => {
+    const address = server.address();
+    console.log(`Server is running in ${process.env.NODE_ENV || 'development'} mode`);
+    console.log(`Server listening on http://${address.address}:${address.port}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
   });
+
+  // Handle server errors
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use`);
+    } else {
+      console.error('Server error:', error);
+    }
+    process.exit(1);
+  });
+
+  // Handle process termination
+  process.on('SIGTERM', () => {
+    console.log('SIGTERM received. Shutting down gracefully');
+    server.close(() => {
+      console.log('Process terminated');
+    });
+  });
+
+  return server;
 };
 
 // Handle unhandled promise rejections
@@ -184,13 +212,24 @@ process.on('uncaughtException', (err) => {
 });
 
 // Start the server after database connection is established
-if (process.env.NODE_ENV !== 'test') {
+console.log('Starting server initialization...');
+
+// In production, connect to database first
+if (process.env.NODE_ENV === 'production') {
+  console.log('Connecting to database...');
   connectDB()
-    .then(() => startServer())
+    .then(() => {
+      console.log('✅ Database connected successfully');
+      startServer();
+    })
     .catch(err => {
-      console.error('Database connection failed:', err);
+      console.error('❌ Database connection failed:', err);
       process.exit(1);
     });
+} else {
+  // In development, start server immediately
+  console.log('Starting server in development mode...');
+  startServer();
 }
 
 module.exports = app; // For testing
