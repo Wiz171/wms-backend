@@ -148,6 +148,15 @@ app.use((err, req, res, next) => {
 // Database connection
 connectDB();
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'success',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Routes
 app.use('/', require('./server/routes/router'));
 
@@ -165,12 +174,27 @@ const server = http.createServer(app);
 
 // Start server only when we have a valid database connection
 const startServer = () => {
+  // Ensure PORT is a number
+  const port = Number(PORT);
+  
+  if (isNaN(port)) {
+    console.error('❌ Invalid PORT:', PORT);
+    process.exit(1);
+  }
+
   // Start the server on all network interfaces (0.0.0.0)
-  server.listen(PORT, '0.0.0.0', () => {
+  server.listen(port, '0.0.0.0', () => {
     const address = server.address();
-    console.log(`Server is running in ${process.env.NODE_ENV || 'development'} mode`);
-    console.log(`Server listening on http://${address.address}:${address.port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`✅ Server is running in ${process.env.NODE_ENV || 'development'} mode`);
+    console.log(`🌐 Server listening on http://0.0.0.0:${port}`);
+    console.log(`🔧 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`🔄 Process ID: ${process.pid}`);
+  });
+  
+  // Handle server listening event
+  server.on('listening', () => {
+    console.log('✅ Server is now listening');
+    console.log(`📡 Server address: ${JSON.stringify(server.address())}`);
   });
 
   // Handle server errors
