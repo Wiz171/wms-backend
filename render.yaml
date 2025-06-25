@@ -2,7 +2,7 @@ services:
   - type: web
     name: wms-backend
     env: node
-    buildCommand: ./render-build.sh
+    buildCommand: npm install && npm run build
     startCommand: node server.js
     envVars:
       - key: NODE_ENV
@@ -20,6 +20,7 @@ services:
       - key: ALLOWED_ORIGINS
         value: https://your-frontend-domain.com,https://your-netlify-app.netlify.app
 
+# Database configuration
 databases:
   - name: wms-db
     databaseName: wms
