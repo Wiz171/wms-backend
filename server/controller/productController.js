@@ -68,7 +68,12 @@ exports.update = async (req, res) => {
         res.json({ message: 'Product updated', product });
     } catch (err) {
         console.error('Error updating product:', err);
-        res.status(500).send('Error updating product: ' + err.message);
+        // Ensure we always return JSON
+        res.status(500).json({ 
+            error: 'Failed to update product',
+            message: err.message,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+        });
     }
 };
 
