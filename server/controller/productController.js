@@ -40,40 +40,93 @@ exports.find = async (req, res) => {
 };
 
 // Update a product
-exports.update = async (req, res) => {
+exports.update = async (req, res, next) => {
     try {
         const { id } = req.params;
-        let update = req.body;
-        // Defensive: Remove specs if it's not a non-empty object
-        if ('specs' in update && (typeof update.specs !== 'object' || Array.isArray(update.specs) || Object.keys(update.specs).length === 0)) {
-            delete update.specs;
+        
+        // Validate request body
+        if (!req.body || Object.keys(req.body).length === 0) {
+            const error = new Error('Request body cannot be empty');
+            error.status = 400;
+            throw error;
         }
-        // Prevent manager from editing another manager or superadmin
-        if (req.user.role === 'manager') {
-            const targetUser = await Product.findById(id).populate('createdBy');
-            if (targetUser && targetUser.createdBy && (targetUser.createdBy.role === 'manager' || targetUser.createdBy.role === 'superadmin')) {
-                return res.status(403).json({ message: 'Managers cannot edit users with manager or superadmin role.' });
+
+        let update = { ...req.body };
+        
+        // Defensive: Handle specs field
+        if ('specs' in update) {
+            if (typeof update.specs !== 'object' || Array.isArray(update.specs) || update.specs === null) {
+                delete update.specs;
+            } else if (Object.keys(update.specs).length === 0) {
+                delete update.specs;
             }
         }
-        const product = await Product.findByIdAndUpdate(id, update, { new: true });
-        if (!product) return res.status(404).send('Product not found');
-        // Log action
-        await logAction({
-          action: 'update',
-          entity: 'product',
-          entityId: product._id,
-          user: req.user,
-          details: { updatedFields: Object.keys(update) }
+
+        // Authorization check for managers
+        if (req.user.role === 'manager') {
+            const targetProduct = await Product.findById(id).populate('createdBy');
+            
+            if (!targetProduct) {
+                const error = new Error('Product not found');
+                error.status = 404;
+                throw error;
+            }
+
+            if (targetProduct.createdBy && 
+                (targetProduct.createdBy.role === 'manager' || 
+                 targetProduct.createdBy.role === 'superadmin')) {
+                const error = new Error('Managers cannot edit products created by other managers or superadmins');
+                error.status = 403;
+                throw error;
+            }
+        }
+
+        // Update the product
+        const product = await Product.findByIdAndUpdate(
+            id, 
+            update, 
+            { 
+                new: true,
+                runValidators: true,
+                context: 'query'
+            }
+        );
+
+        if (!product) {
+            const error = new Error('Product not found');
+            error.status = 404;
+            throw error;
+        }
+
+        // Log the action
+        try {
+            await logAction({
+                action: 'update',
+                entity: 'product',
+                entityId: product._id,
+                user: req.user,
+                details: { 
+                    updatedFields: Object.keys(update),
+                    product: product.toObject()
+                }
+            });
+        } catch (logError) {
+            console.error('Error logging action:', logError);
+            // Don't fail the request if logging fails
+        }
+
+        // Send success response
+        res.status(200).json({ 
+            status: 'success',
+            message: 'Product updated successfully',
+            data: {
+                product
+            }
         });
-        res.json({ message: 'Product updated', product });
+
     } catch (err) {
-        console.error('Error updating product:', err);
-        // Ensure we always return JSON
-        res.status(500).json({ 
-            error: 'Failed to update product',
-            message: err.message,
-            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
-        });
+        // Pass the error to the error handling middleware
+        next(err);
     }
 };
 

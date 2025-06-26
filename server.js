@@ -138,11 +138,31 @@ app.use('/js', express.static(path.resolve(__dirname, "assets/js")));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    status: 'error',
-    message: err.message || 'Internal server error'
+  console.error('Error middleware caught:', err);
+  
+  // Default to 500 if status code not set
+  const statusCode = err.status || 500;
+  
+  // Prepare error response
+  const errorResponse = {
+    error: err.name || 'InternalServerError',
+    message: err.message || 'An unexpected error occurred',
+    ...(process.env.NODE_ENV === 'development' && {
+      stack: err.stack,
+      details: err.details
+    })
+  };
+
+  // Log the error
+  console.error(`[${new Date().toISOString()}] Error: ${errorResponse.message}`, {
+    statusCode,
+    path: req.path,
+    method: req.method,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
+
+  // Send JSON response
+  res.status(statusCode).json(errorResponse);
 });
 
 // Database connection
