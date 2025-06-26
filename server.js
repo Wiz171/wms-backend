@@ -10,7 +10,7 @@ const { apiLimiter } = require('./server/middleware/rateLimiter');
 require("dotenv").config({ path: "./config.env" });
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 8080;
 
 // Trust Heroku proxy for correct client IPs
 app.set('trust proxy', 1);
