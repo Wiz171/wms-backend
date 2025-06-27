@@ -62,24 +62,15 @@ exports.update = async (req, res, next) => {
             }
         }
 
-        // Authorization check for managers
-        if (req.user.role === 'manager') {
-            const targetProduct = await Product.findById(id).populate('createdBy');
-            
-            if (!targetProduct) {
-                const error = new Error('Product not found');
-                error.status = 404;
-                throw error;
-            }
-
-            // Allow managers to edit their own products
-            if (targetProduct.createdBy && 
-                targetProduct.createdBy._id.toString() !== req.user._id.toString()) {
-                const error = new Error('You can only edit products you have created');
-                error.status = 403;
-                throw error;
-            }
+        // Check if product exists
+        const targetProduct = await Product.findById(id);
+        if (!targetProduct) {
+            const error = new Error('Product not found');
+            error.status = 404;
+            throw error;
         }
+        
+        // Managers can edit all products, no additional checks needed
 
         // Update the product
         const product = await Product.findByIdAndUpdate(
