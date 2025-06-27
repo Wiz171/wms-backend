@@ -96,9 +96,52 @@ exports.getTasksByPurchaseOrder = [
 // GET /api/tasks - List all tasks (for admin/manager views)
 exports.getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find();
+    console.log('Fetching all tasks...');
+    const tasks = await Task.find({}).lean();
+    console.log('Found tasks:', tasks);
     res.json(tasks);
   } catch (err) {
-    res.status(500).json({ message: 'Error fetching tasks: ' + err.message });
+    console.error('Error in getTasks:', err);
+    res.status(500).json({ 
+      message: 'Error fetching tasks',
+      error: err.message,
+      stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+    });
+  }
+};
+
+// Test endpoint to check task creation
+exports.testTaskCreation = async (req, res) => {
+  try {
+    console.log('Testing task creation...');
+    const testTask = new Task({
+      purchaseOrderId: new mongoose.Types.ObjectId(),
+      type: 'Picking',
+      assignedTo: 'Test User',
+      details: 'Test task',
+      status: 'Pending',
+      deadline: new Date()
+    });
+    
+    const savedTask = await testTask.save();
+    console.log('Test task created:', savedTask);
+    
+    // Verify the task exists in the database
+    const foundTask = await Task.findById(savedTask._id);
+    console.log('Found test task in DB:', foundTask);
+    
+    res.json({
+      success: true,
+      createdTask: savedTask,
+      verified: foundTask !== null
+    });
+    
+  } catch (error) {
+    console.error('Test task creation failed:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };

@@ -19,6 +19,7 @@ exports.create = async (req, res) => {
         await order.save();
         
         // Create tasks for the purchase order
+        console.log('Starting task creation for purchase order:', order._id);
         try {
             // Create Picking Task
             const pickingTask = new Task({
@@ -29,7 +30,9 @@ exports.create = async (req, res) => {
                 status: 'Pending',
                 deadline: new Date(new Date().setDate(new Date().getDate() + 1)) // Due tomorrow
             });
+            console.log('Created picking task:', pickingTask);
             await pickingTask.save();
+            console.log('Picking task saved:', pickingTask._id);
             
             // Create Packing Task (will be activated after picking)
             const packingTask = new Task({
@@ -40,7 +43,9 @@ exports.create = async (req, res) => {
                 status: 'Pending',
                 deadline: new Date(new Date().setDate(new Date().getDate() + 2)) // Due in 2 days
             });
+            console.log('Created packing task:', packingTask);
             await packingTask.save();
+            console.log('Packing task saved:', packingTask._id);
             
             // Log the action
             await logAction({
@@ -53,8 +58,10 @@ exports.create = async (req, res) => {
                     taskCount: 2 // Picking and Packing tasks created
                 }
             });
+            console.log('Successfully created tasks for purchase order:', order._id);
         } catch (taskError) {
             console.error('Error creating tasks for purchase order:', taskError);
+            console.error('Task creation error stack:', taskError.stack);
             // Don't fail the request if task creation fails
         }
         

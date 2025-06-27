@@ -197,6 +197,9 @@ route.get('/api/dashboard/stock',
 );
 
 // Task routes
+// Test endpoint (temporary for debugging)
+route.get('/api/tasks/test', taskController.testTaskCreation);
+
 route.get('/api/tasks',
   checkPermission(MODULES.TASKS, ACTIONS.READ),
   taskController.getTasks
