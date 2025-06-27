@@ -72,10 +72,10 @@ exports.update = async (req, res, next) => {
                 throw error;
             }
 
+            // Allow managers to edit their own products
             if (targetProduct.createdBy && 
-                (targetProduct.createdBy.role === 'manager' || 
-                 targetProduct.createdBy.role === 'superadmin')) {
-                const error = new Error('Managers cannot edit products created by other managers or superadmins');
+                targetProduct.createdBy._id.toString() !== req.user._id.toString()) {
+                const error = new Error('You can only edit products you have created');
                 error.status = 403;
                 throw error;
             }
