@@ -1,4 +1,6 @@
 const PurchaseOrder = require('../model/purchaseOrder');
+const Task = require('../model/task');
+const { logAction } = require('../utils/logAction');
 
 // Create a new purchase order
 exports.create = async (req, res) => {
@@ -15,7 +17,52 @@ exports.create = async (req, res) => {
         }
         const order = new PurchaseOrder(orderData);
         await order.save();
-        res.status(201).json({ message: 'Purchase order created', order });
+        
+        // Create tasks for the purchase order
+        try {
+            // Create Picking Task
+            const pickingTask = new Task({
+                purchaseOrderId: order._id,
+                type: 'Picking',
+                assignedTo: 'Unassigned',
+                details: `Pick items for Purchase Order #${order.orderNumber || order._id}`,
+                status: 'Pending',
+                deadline: new Date(new Date().setDate(new Date().getDate() + 1)) // Due tomorrow
+            });
+            await pickingTask.save();
+            
+            // Create Packing Task (will be activated after picking)
+            const packingTask = new Task({
+                purchaseOrderId: order._id,
+                type: 'Packing',
+                assignedTo: 'Unassigned',
+                details: `Pack items for Purchase Order #${order.orderNumber || order._id}`,
+                status: 'Pending',
+                deadline: new Date(new Date().setDate(new Date().getDate() + 2)) // Due in 2 days
+            });
+            await packingTask.save();
+            
+            // Log the action
+            await logAction({
+                action: 'create',
+                entity: 'purchaseOrder',
+                entityId: order._id,
+                user: req.user,
+                details: { 
+                    orderNumber: order.orderNumber,
+                    taskCount: 2 // Picking and Packing tasks created
+                }
+            });
+        } catch (taskError) {
+            console.error('Error creating tasks for purchase order:', taskError);
+            // Don't fail the request if task creation fails
+        }
+        
+        res.status(201).json({ 
+            message: 'Purchase order created', 
+            order,
+            tasksCreated: true
+        });
     } catch (err) {
         res.status(500).send('Error creating purchase order: ' + err.message);
     }
