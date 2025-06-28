@@ -112,23 +112,42 @@ const updateOrder = async (req, res) => {
 
 const deleteOrder = async (req, res) => {
     try {
-        const { id } = req.params;
-        const order = await Order.findByIdAndDelete(id);
+        const order = await Order.findById(req.params.id);
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
-        // Log action
+
+        // Log the deletion
         await logAction({
-          action: 'delete',
-          entity: 'order',
-          entityId: id,
-          user: req.user,
-          details: { customerName: order.customerName, total: order.total }
+            action: 'delete',
+            entity: 'order',
+            entityId: order._id,
+            user: req.user ? req.user.id : 'system',
+            changes: { order: order.toObject() }
         });
-        res.status(204).send();
+
+        await order.remove();
+        res.json({ message: 'Order deleted successfully' });
     } catch (err) {
         console.error('Error deleting order:', err);
         res.status(500).json({ message: 'Error deleting order: ' + err.message });
+    }
+};
+
+const getOrderById = async (req, res) => {
+    try {
+        const order = await Order.findById(req.params.id)
+            .populate('items.productId')
+            .populate('createdBy', '-password');
+            
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        
+        res.json(order);
+    } catch (err) {
+        console.error('Error fetching order:', err);
+        res.status(500).json({ message: 'Error fetching order: ' + err.message });
     }
 };
 
@@ -136,5 +155,6 @@ module.exports = {
     getOrders,
     createOrder,
     updateOrder,
-    deleteOrder
+    deleteOrder,
+    getOrderById
 };
