@@ -238,9 +238,51 @@ const updateDeliveryStatus = async (req, res) => {
     }
 };
 
+// Get delivery order details
+const getDeliveryOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const deliveryOrder = await DeliveryOrder.findOne({ orderId: id })
+            .populate('orderId')
+            .populate('items.productId');
+            
+        if (!deliveryOrder) {
+            return res.status(404).json({ message: 'Delivery order not found' });
+        }
+        
+        res.json(deliveryOrder);
+    } catch (error) {
+        console.error('Error fetching delivery order:', error);
+        res.status(500).json({ message: 'Error fetching delivery order: ' + error.message });
+    }
+};
+
+// Get order status history
+const getOrderStatusHistory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const order = await Order.findById(id)
+            .select('statusHistory')
+            .populate('statusHistory.changedBy', 'name email');
+            
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        
+        res.json(order.statusHistory || []);
+    } catch (error) {
+        console.error('Error fetching order status history:', error);
+        res.status(500).json({ message: 'Error fetching order status history: ' + error.message });
+    }
+};
+
 module.exports = {
     acceptOrder,
     rejectOrder,
     switchToDeliveryOrder,
-    updateDeliveryStatus
+    updateDeliveryStatus,
+    getDeliveryOrder,
+    getOrderStatusHistory
 };
