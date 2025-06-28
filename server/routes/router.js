@@ -23,6 +23,10 @@ const { UnauthorizedError } = require('../utils/errors');
 const roleController = require('../controller/roleController');
 const logController = require('../controller/logController');
 const taskRoutes = require('./taskRoutes');
+const orderRoutes = require('./orderRoutes');
+
+// Order routes
+route.use('/api/orders', orderRoutes);
 
 // User Profile routes
 const userProfileRouter = require('./userProfile');
