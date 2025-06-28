@@ -248,6 +248,21 @@ route.delete('/api/orders/:id',
   orderController.deleteOrder
 );
 
+// Approve and cancel order endpoints
+route.patch('/api/orders/:id/approve',
+  checkPermission(MODULES.ORDERS, ACTIONS.UPDATE),
+  orderController.approveOrder
+);
+
+route.patch('/api/orders/:id/cancel',
+  checkPermission(MODULES.ORDERS, ACTIONS.UPDATE),
+  orderController.cancelOrder
+);
+
+// Assign and advance order endpoints
+route.patch('/api/orders/:id/assign', orderController.assignOrder);
+route.patch('/api/orders/:id/advance', orderController.advanceOrderStatus);
+
 // Role management routes (superadmin only)
 route.post('/api/roles', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.createRole);
 route.delete('/api/roles/:role', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.deleteRole);
@@ -336,5 +351,8 @@ route.post('/login', loginValidation, async (req, res) => {
     });
   }
 });
+
+// Task routes (mount all task-related endpoints under /api)
+route.use('/api', taskRoutes);
 
 module.exports = route;

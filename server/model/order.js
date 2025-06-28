@@ -9,9 +9,12 @@ const orderSchema = new mongoose.Schema({
     }],
     total: { type: Number, required: true, min: 0 },
     orderDate: { type: Date, default: Date.now },
-    status: { type: String, enum: ['pending', 'completed', 'cancelled'], default: 'pending' },
+    status: { type: String, enum: ['pending', 'processing', 'preparing_do', 'preparing_to_ship', 'shipping', 'delivered', 'completed', 'cancelled'], default: 'pending' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    expectedDeliveryDate: { type: Date }
+    assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // New: assigned user
+    expectedDeliveryDate: { type: Date },
+    deliveryDate: { type: Date }, // For invoice
+    invoiceUrl: { type: String }, // For generated invoice
 }, { timestamps: true });
 
 const Order = mongoose.model('Order', orderSchema);
