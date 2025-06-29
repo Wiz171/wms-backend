@@ -3,6 +3,7 @@ const Order = require('../model/order');
 const Customer = require('../model/customer');
 const Product = require('../model/product');
 const Task = require('../model/task');
+const PurchaseOrder = require('../model/purchaseOrder');
 
 // Mock data for dashboard
 const mockStats = {
@@ -34,21 +35,29 @@ const getStats = async (req, res) => {
         return res.status(401).json({ message: 'Unauthorized: No role found' });
     }
     try {
-        // Fetch real data from the database
-        const [totalOrders, totalRevenueAgg, totalCustomers, totalProducts, totalTasks, completedTasks, lowStockProducts] = await Promise.all([
-            Order.countDocuments(),
-            Order.aggregate([
-                { $group: { _id: null, total: { $sum: "$total" } } }
+        // Use PurchaseOrder for PO-based stats
+        const [totalPOs, totalRevenueAgg, totalCustomers, totalProducts, totalTasks, completedTasks, lowStockProducts] = await Promise.all([
+            PurchaseOrder.countDocuments(),
+            PurchaseOrder.aggregate([
+                { $unwind: "$items" },
+                { $lookup: {
+                    from: "products",
+                    localField: "items.product",
+                    foreignField: "_id",
+                    as: "productInfo"
+                }},
+                { $unwind: "$productInfo" },
+                { $group: { _id: null, total: { $sum: { $multiply: ["$items.quantity", "$productInfo.price"] } } } }
             ]),
             Customer.countDocuments(),
             Product.countDocuments(),
-            Task.countDocuments(),
-            Task.countDocuments({ status: 'completed' }),
-            Product.countDocuments({ stock: { $lte: 10 } }) // Adjust threshold as needed
+            Task.countDocuments({ purchaseOrderId: { $exists: true, $ne: null } }),
+            Task.countDocuments({ purchaseOrderId: { $exists: true, $ne: null }, status: 'Completed' }),
+            Product.countDocuments({ stock: { $lte: 10 } })
         ]);
         const totalRevenue = totalRevenueAgg[0]?.total || 0;
         const stats = {
-            totalOrders,
+            totalPOs,
             totalRevenue,
             totalCustomers,
             totalProducts,
@@ -79,7 +88,8 @@ const getStats = async (req, res) => {
 
 const getTasks = async (req, res) => {
     try {
-        const tasks = await Task.find({}, 'title status priority');
+        // Only return tasks linked to POs
+        const tasks = await Task.find({ purchaseOrderId: { $exists: true, $ne: null } }, 'title status priority');
         const formatted = tasks.map(task => ({
             id: task._id,
             title: task.title,
