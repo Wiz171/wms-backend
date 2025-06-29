@@ -308,4 +308,9 @@ route.patch('/api/purchase-orders/:id/invoice',
   purchaseOrderController.generateInvoice
 );
 
+// Dashboard routes
+route.get('/api/dashboard/stats', dashboardController.getStats);
+route.get('/api/dashboard/tasks', dashboardController.getTasks);
+route.get('/api/dashboard/stock', dashboardController.getStock);
+
 module.exports = route;
