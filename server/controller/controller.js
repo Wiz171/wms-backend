@@ -32,9 +32,12 @@ exports.create = async (req, res) => {
 // Find users
 exports.find = async (req, res) => {
     try {
-        let query = { role: 'user' };
-        // If manager, exclude superadmin users (but only return users anyway)
-        // If you want to allow managers to see managers, adjust here
+        let query = {};
+        if (req.user.role === 'manager') {
+            query = { role: { $ne: 'superadmin' } };
+        } else if (req.user.role === 'user') {
+            query = { _id: req.user._id };
+        }
         const users = await User.find(query, '-password');
         res.json({ status: 'success', data: users });
     } catch (err) {
