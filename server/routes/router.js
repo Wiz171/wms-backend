@@ -180,74 +180,6 @@ route.delete('/api/purchase-orders/:id',
   purchaseOrderController.delete
 );
 
-// Dashboard routes
-route.get('/api/dashboard/stats',
-  checkPermission(MODULES.DASHBOARD, ACTIONS.READ),
-  dashboardController.getStats
-);
-
-route.get('/api/dashboard/tasks',
-  checkPermission(MODULES.DASHBOARD, ACTIONS.READ),
-  dashboardController.getTasks
-);
-
-route.get('/api/dashboard/stock',
-  checkPermission(MODULES.DASHBOARD, ACTIONS.READ),
-  dashboardController.getStock
-);
-
-// Task routes
-route.get('/api/tasks',
-  checkPermission(MODULES.TASKS, ACTIONS.READ),
-  taskController.getTasks
-);
-
-route.post('/api/tasks',
-  checkPermission(MODULES.TASKS, ACTIONS.CREATE),
-  taskController.createTask
-);
-
-route.put('/api/tasks/:id',
-  checkPermission(MODULES.TASKS, ACTIONS.UPDATE),
-  taskController.updateTask
-);
-
-route.patch('/api/tasks/:id',
-  checkPermission(MODULES.TASKS, ACTIONS.UPDATE),
-  taskController.updateTask
-);
-
-route.delete('/api/tasks/:id',
-  checkPermission(MODULES.TASKS, ACTIONS.DELETE),
-  taskController.deleteTask
-);
-
-// Order routes
-route.get('/api/orders',
-  checkPermission(MODULES.ORDERS, ACTIONS.READ),
-  orderController.getOrders
-);
-
-route.post('/api/orders',
-  checkPermission(MODULES.ORDERS, ACTIONS.CREATE),
-  orderController.createOrder
-);
-
-route.put('/api/orders/:id',
-  checkPermission(MODULES.ORDERS, ACTIONS.UPDATE),
-  orderController.updateOrder
-);
-
-route.patch('/api/orders/:id',
-  checkPermission(MODULES.ORDERS, ACTIONS.UPDATE),
-  orderController.updateOrder
-);
-
-route.delete('/api/orders/:id',
-  checkPermission(MODULES.ORDERS, ACTIONS.DELETE),
-  orderController.deleteOrder
-);
-
 // Approve and cancel order endpoints
 route.patch('/api/orders/:id/approve',
   checkPermission(MODULES.ORDERS, ACTIONS.UPDATE),
@@ -354,5 +286,26 @@ route.post('/login', loginValidation, async (req, res) => {
 
 // Task routes (mount all task-related endpoints under /api)
 route.use('/api', taskRoutes);
+
+// Approve, advance, createDO, and generateInvoice routes for purchase orders
+route.patch('/api/purchase-orders/:id/approve',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.approve
+);
+
+route.patch('/api/purchase-orders/:id/advance',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.advanceStatus
+);
+
+route.patch('/api/purchase-orders/:id/do',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.createDO
+);
+
+route.patch('/api/purchase-orders/:id/invoice',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.generateInvoice
+);
 
 module.exports = route;
