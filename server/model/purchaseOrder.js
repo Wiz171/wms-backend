@@ -11,7 +11,7 @@ const purchaseOrderSchema = new mongoose.Schema({
     notes: String,
     status: {
         type: String,
-        enum: ['pending', 'processing', 'shipping', 'delivered'],
+        enum: ['pending', 'processing', 'shipping', 'delivered', 'rejected', 'cancelled'],
         default: 'pending',
         required: true
     },
@@ -21,6 +21,20 @@ const purchaseOrderSchema = new mongoose.Schema({
     },
     invoiceUrl: {
         type: String
+    },
+    // Rejection details
+    rejectionReason: {
+        type: String,
+        default: null
+    },
+    rejectedAt: {
+        type: Date,
+        default: null
+    },
+    rejectedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        default: null
     }
 }, { strict: false });
 

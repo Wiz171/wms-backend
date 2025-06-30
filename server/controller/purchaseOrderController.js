@@ -139,9 +139,68 @@ exports.approve = async (req, res) => {
         if (order.status === 'cancelled') return res.status(400).json({ message: 'Cannot approve a cancelled PO' });
         order.status = 'processing';
         await order.save();
+        
+        // Log the approval
+        await logAction({
+            action: 'approve',
+            entity: 'purchaseOrder',
+            entityId: order._id,
+            user: req.user,
+            details: { status: 'approved', newStatus: 'processing' }
+        });
+        
         res.json({ message: 'Purchase order approved', order });
     } catch (err) {
         res.status(500).send('Error approving purchase order: ' + err.message);
+    }
+};
+
+// Reject a purchase order (manager only)
+exports.reject = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { reason } = req.body;
+        
+        if (!reason) {
+            return res.status(400).json({ message: 'Rejection reason is required' });
+        }
+        
+        const order = await PurchaseOrder.findById(id);
+        if (!order) return res.status(404).send('Purchase order not found');
+        if (order.status !== 'pending') return res.status(400).json({ message: 'Only pending POs can be rejected' });
+        
+        order.status = 'rejected';
+        order.rejectionReason = reason;
+        order.rejectedAt = new Date();
+        order.rejectedBy = req.user?._id;
+        
+        await order.save();
+        
+        // Log the rejection
+        await logAction({
+            action: 'reject',
+            entity: 'purchaseOrder',
+            entityId: order._id,
+            user: req.user,
+            details: { 
+                status: 'rejected', 
+                reason: reason,
+                rejectedBy: req.user?._id,
+                rejectedAt: new Date()
+            }
+        });
+        
+        res.json({ 
+            message: 'Purchase order rejected', 
+            order,
+            rejection: {
+                reason,
+                rejectedBy: req.user?._id,
+                rejectedAt: order.rejectedAt
+            }
+        });
+    } catch (err) {
+        res.status(500).send('Error rejecting purchase order: ' + err.message);
     }
 };
 

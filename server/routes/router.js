@@ -352,10 +352,15 @@ route.post('/login', loginValidation, async (req, res) => {
 // Task routes (mount all task-related endpoints under /api)
 route.use('/api', taskRoutes);
 
-// Approve, advance, createDO, and generateInvoice routes for purchase orders
+// Approve, reject, advance, createDO, and generateInvoice routes for purchase orders
 route.patch('/api/purchase-orders/:id/approve',
   checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
   purchaseOrderController.approve
+);
+
+route.patch('/api/purchase-orders/:id/reject',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.reject
 );
 
 route.patch('/api/purchase-orders/:id/advance',
