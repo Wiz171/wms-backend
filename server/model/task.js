@@ -2,10 +2,15 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const taskSchema = new Schema({
+  orderId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Order',
+    required: false
+  },
   purchaseOrderId: {
     type: Schema.Types.ObjectId,
     ref: 'PurchaseOrder',
-    required: true
+    required: false
   },
   type: {
     type: String,

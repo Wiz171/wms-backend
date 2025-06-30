@@ -33,12 +33,13 @@ exports.create = async (req, res) => {
 exports.find = async (req, res) => {
     try {
         let query = {};
-        // If manager, exclude superadmin users
         if (req.user.role === 'manager') {
             query = { role: { $ne: 'superadmin' } };
+        } else if (req.user.role === 'user') {
+            query = { _id: req.user._id };
         }
         const users = await User.find(query, '-password');
-        res.json(users);
+        res.json({ status: 'success', data: users });
     } catch (err) {
         res.status(500).send('Error fetching users: ' + err.message);
     }

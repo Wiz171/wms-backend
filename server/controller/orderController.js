@@ -139,15 +139,137 @@ const getOrderById = async (req, res) => {
         const order = await Order.findById(req.params.id)
             .populate('items.productId')
             .populate('createdBy', '-password');
-            
         if (!order) {
             return res.status(404).json({ message: 'Order not found' });
         }
-        
         res.json(order);
     } catch (err) {
         console.error('Error fetching order:', err);
         res.status(500).json({ message: 'Error fetching order: ' + err.message });
+    }
+};
+
+// Approve order (set status to processing)
+const approveOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const order = await Order.findByIdAndUpdate(
+            id,
+            { status: 'processing' },
+            { new: true }
+        )
+        .populate('items.productId')
+        .populate('createdBy', '-password');
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        await logAction({
+            action: 'approve',
+            entity: 'order',
+            entityId: order._id,
+            user: req.user,
+            details: { status: 'processing' }
+        });
+        res.json(order);
+    } catch (err) {
+        console.error('Error approving order:', err);
+        res.status(500).json({ message: 'Error approving order: ' + err.message });
+    }
+};
+
+// Cancel order (set status to cancelled)
+const cancelOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const order = await Order.findByIdAndUpdate(
+            id,
+            { status: 'cancelled' },
+            { new: true }
+        )
+        .populate('items.productId')
+        .populate('createdBy', '-password');
+        if (!order) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+        await logAction({
+            action: 'cancel',
+            entity: 'order',
+            entityId: order._id,
+            user: req.user,
+            details: { status: 'cancelled' }
+        });
+        res.json(order);
+    } catch (err) {
+        console.error('Error cancelling order:', err);
+        res.status(500).json({ message: 'Error cancelling order: ' + err.message });
+    }
+};
+
+// Assign order to a user
+const assignOrder = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { userId } = req.body;
+        if (!userId) return res.status(400).json({ message: 'userId is required' });
+        const order = await Order.findByIdAndUpdate(
+            id,
+            { assignedTo: userId },
+            { new: true }
+        )
+        .populate('items.productId')
+        .populate('createdBy', '-password')
+        .populate('assignedTo', 'name email');
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        await logAction({
+            action: 'assign',
+            entity: 'order',
+            entityId: order._id,
+            user: req.user,
+            details: { assignedTo: userId }
+        });
+        res.json(order);
+    } catch (err) {
+        console.error('Error assigning order:', err);
+        res.status(500).json({ message: 'Error assigning order: ' + err.message });
+    }
+};
+
+// Advance order status (for assigned user)
+const advanceOrderStatus = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nextStatus } = req.body;
+        const allowedStatuses = ['preparing_do', 'preparing_to_ship', 'shipping', 'delivered', 'completed'];
+        if (!allowedStatuses.includes(nextStatus)) {
+            return res.status(400).json({ message: 'Invalid next status' });
+        }
+        const update = { status: nextStatus };
+        // If delivered, set deliveryDate
+        if (nextStatus === 'delivered') {
+            update.deliveryDate = new Date();
+        }
+        const order = await Order.findByIdAndUpdate(id, update, { new: true })
+            .populate('items.productId')
+            .populate('createdBy', '-password')
+            .populate('assignedTo', 'name email');
+        if (!order) return res.status(404).json({ message: 'Order not found' });
+        await logAction({
+            action: 'advance_status',
+            entity: 'order',
+            entityId: order._id,
+            user: req.user,
+            details: { status: nextStatus }
+        });
+        // If delivered, generate invoice (stub)
+        if (nextStatus === 'delivered') {
+            // Simulate invoice generation
+            order.invoiceUrl = `/invoices/invoice_${order._id}.pdf`;
+            await order.save();
+        }
+        res.json(order);
+    } catch (err) {
+        console.error('Error advancing order status:', err);
+        res.status(500).json({ message: 'Error advancing order status: ' + err.message });
     }
 };
 
@@ -156,5 +278,9 @@ module.exports = {
     createOrder,
     updateOrder,
     deleteOrder,
-    getOrderById
+    getOrderById,
+    approveOrder,
+    cancelOrder,
+    assignOrder,
+    advanceOrderStatus
 };

@@ -32,7 +32,8 @@ exports.create = async (req, res) => {
 // Get all products
 exports.find = async (req, res) => {
     try {
-        const products = await Product.find();
+        // Populate createdBy with name and email
+        const products = await Product.find().populate('createdBy', 'name email');
         res.json(products);
     } catch (err) {
         res.status(500).send('Error fetching products: ' + err.message);
@@ -49,6 +50,19 @@ exports.update = async (req, res, next) => {
             const error = new Error('Request body cannot be empty');
             error.status = 400;
             throw error;
+        }
+
+        // Prevent manager from editing another manager's or superadmin's product, but allow editing their own
+        if (req.user.role === 'manager') {
+            const targetProduct = await Product.findById(id).populate('createdBy');
+            if (
+                targetProduct &&
+                targetProduct.createdBy &&
+                targetProduct.createdBy._id.toString() !== req.user._id.toString() &&
+                (targetProduct.createdBy.role === 'manager' || targetProduct.createdBy.role === 'superadmin')
+            ) {
+                return res.status(403).json({ message: 'Managers cannot edit products created by another manager or superadmin.' });
+            }
         }
 
         let update = { ...req.body };

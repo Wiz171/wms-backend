@@ -4,7 +4,7 @@ const productSchema = new mongoose.Schema({
     name: { type: String, required: true },
     description: String,
     price: { type: Number, required: true },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Fixed: use model name 'User'
     createdAt: { type: Date, default: Date.now },
     specs: {
         type: Object, // Flexible for dynamic specs (key-value pairs)

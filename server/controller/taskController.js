@@ -93,6 +93,19 @@ exports.getTasksByPurchaseOrder = [
   }
 ];
 
+// GET /api/orders/:orderId/tasks - List all tasks for an order
+exports.getTasksByOrder = [
+  param('orderId').isMongoId(),
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const tasks = await Task.find({ orderId: req.params.orderId });
+    res.json(tasks);
+  }
+];
+
 // GET /api/tasks - List all tasks (for admin/manager views)
 exports.getTasks = async (req, res) => {
   try {

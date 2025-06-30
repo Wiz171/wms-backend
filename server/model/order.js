@@ -6,22 +6,77 @@ const orderSchema = new mongoose.Schema({
         productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
         quantity: { type: Number, required: true, min: 1 },
         price: { type: Number, required: true, min: 0 },
-        name: { type: String } // Added for easier reference
+        name: { type: String }, // Added for easier reference
+        _id: false
     }],
     total: { type: Number, required: true, min: 0 },
     orderDate: { type: Date, default: Date.now },
     status: { 
         type: String, 
-        enum: ['pending', 'accepted', 'rejected', 'processing', 'completed', 'cancelled'], 
+        enum: [
+            'pending', 
+            'accepted', 
+            'rejected', 
+            'processing', 
+            'completed', 
+            'cancelled',
+            'preparing_do',
+            'preparing_to_ship',
+            'shipping',
+            'delivered'
+        ], 
         default: 'pending' 
     },
-    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdBy: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User', 
+        required: true 
+    },
+    assignedTo: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'User' 
+    },
     expectedDeliveryDate: { type: Date },
-    deliveryOrder: { type: mongoose.Schema.Types.ObjectId, ref: 'DeliveryOrder' },
+    deliveryDate: { type: Date },
+    deliveryOrder: { 
+        type: mongoose.Schema.Types.ObjectId, 
+        ref: 'DeliveryOrder' 
+    },
+    invoiceUrl: { type: String },
     rejectionReason: { type: String },
     acceptedAt: { type: Date },
     completedAt: { type: Date },
-    cancelledAt: { type: Date }
+    cancelledAt: { type: Date },
+    notes: { type: String },
+    shippingAddress: {
+        street: String,
+        city: String,
+        state: String,
+        postalCode: String,
+        country: String
+    },
+    paymentStatus: {
+        type: String,
+        enum: ['pending', 'partial', 'paid', 'refunded', 'failed'],
+        default: 'pending'
+    },
+    paymentMethod: {
+        type: String,
+        enum: ['cash', 'credit_card', 'bank_transfer', 'other'],
+        default: 'other'
+    },
+    taxAmount: { 
+        type: Number, 
+        default: 0 
+    },
+    discountAmount: { 
+        type: Number, 
+        default: 0 
+    },
+    shippingCost: { 
+        type: Number, 
+        default: 0 
+    }
 }, { 
     timestamps: true,
     toJSON: { virtuals: true },

@@ -1,63 +1,45 @@
+# Dashboard Controller (`dashboardController.js`)
+
+This controller provides API endpoints for dashboard statistics, task summaries, and stock levels in the warehouse management system backend.
+
+---
+
+## Line-by-Line Explanation
+
+```js
 const express = require('express');
 const Order = require('../model/order');
 const Customer = require('../model/customer');
 const Product = require('../model/product');
 const Task = require('../model/task');
-const PurchaseOrder = require('../model/purchaseOrder');
+```
+- Imports Express (not strictly needed here), and the Mongoose models for orders, customers, products, and tasks.
 
-// Mock data for dashboard
-const mockStats = {
-    totalOrders: 150,
-    totalRevenue: 25000,
-    totalCustomers: 45,
-    totalProducts: 78,
-    totalTasks: 3,
-    completedTasks: 1,
-    lowStockProducts: 5
-};
+---
 
-const mockTasks = [
-    { id: 1, title: 'Process new orders', status: 'pending', priority: 'high' },
-    { id: 2, title: 'Update inventory', status: 'in-progress', priority: 'medium' },
-    { id: 3, title: 'Customer support tickets', status: 'completed', priority: 'low' }
-];
-
-const mockStock = [
-    { id: 1, productName: 'Product A', quantity: 100, reorderLevel: 20 },
-    { id: 2, productName: 'Product B', quantity: 50, reorderLevel: 15 },
-    { id: 3, productName: 'Product C', quantity: 75, reorderLevel: 25 }
-];
-
-// Controller methods
+### getStats
+```js
 const getStats = async (req, res) => {
     const role = req.user?.role;
     if (!role) {
         return res.status(401).json({ message: 'Unauthorized: No role found' });
     }
     try {
-        // Use PurchaseOrder for PO-based stats
-        const [totalPOs, totalRevenueAgg, totalCustomers, totalProducts, totalTasks, completedTasks, lowStockProducts] = await Promise.all([
-            PurchaseOrder.countDocuments(),
-            PurchaseOrder.aggregate([
-                { $unwind: "$items" },
-                { $lookup: {
-                    from: "products",
-                    localField: "items.product",
-                    foreignField: "_id",
-                    as: "productInfo"
-                }},
-                { $unwind: "$productInfo" },
-                { $group: { _id: null, total: { $sum: { $multiply: ["$items.quantity", "$productInfo.price"] } } } }
+        // Fetch real data from the database
+        const [totalOrders, totalRevenueAgg, totalCustomers, totalProducts, totalTasks, completedTasks, lowStockProducts] = await Promise.all([
+            Order.countDocuments(),
+            Order.aggregate([
+                { $group: { _id: null, total: { $sum: "$total" } } }
             ]),
             Customer.countDocuments(),
             Product.countDocuments(),
-            Task.countDocuments({ purchaseOrderId: { $exists: true, $ne: null } }),
-            Task.countDocuments({ purchaseOrderId: { $exists: true, $ne: null }, status: 'Completed' }),
-            Product.countDocuments({ stock: { $lte: 10 } })
+            Task.countDocuments(),
+            Task.countDocuments({ status: 'completed' }),
+            Product.countDocuments({ stock: { $lte: 10 } }) // Adjust threshold as needed
         ]);
         const totalRevenue = totalRevenueAgg[0]?.total || 0;
         const stats = {
-            totalPOs,
+            totalOrders,
             totalRevenue,
             totalCustomers,
             totalProducts,
@@ -85,11 +67,21 @@ const getStats = async (req, res) => {
         return res.status(500).json({ message: 'Error fetching dashboard stats' });
     }
 };
+```
+- Gets the user's role from the request.
+- If no role, returns 401 Unauthorized.
+- Uses `Promise.all` to fetch all stats in parallel:
+  - Total orders, total revenue (aggregated), total customers, total products, total tasks, completed tasks, and low stock products.
+- Returns different stats depending on the user's role (superadmin, manager, user).
+- Handles errors and logs them.
 
+---
+
+### getTasks
+```js
 const getTasks = async (req, res) => {
     try {
-        // Only return tasks linked to POs
-        const tasks = await Task.find({ purchaseOrderId: { $exists: true, $ne: null } }, 'title status priority');
+        const tasks = await Task.find({}, 'title status priority');
         const formatted = tasks.map(task => ({
             id: task._id,
             title: task.title,
@@ -102,7 +94,15 @@ const getTasks = async (req, res) => {
         return res.status(500).json({ message: 'Error fetching tasks' });
     }
 };
+```
+- Fetches all tasks, selecting only `title`, `status`, and `priority` fields.
+- Maps tasks to a simplified format for the dashboard.
+- Returns the formatted list or an error.
 
+---
+
+### getStock
+```js
 const getStock = async (req, res) => {
     try {
         const products = await Product.find({}, 'name stock');
@@ -118,9 +118,35 @@ const getStock = async (req, res) => {
         return res.status(500).json({ message: 'Error fetching stock' });
     }
 };
+```
+- Fetches all products, selecting only `name` and `stock` fields.
+- Maps products to a format suitable for dashboard stock widgets.
+- Returns the formatted list or an error.
 
+---
+
+## Exported Functions
+```js
 module.exports = {
     getStats,
     getTasks,
     getStock
 };
+```
+- Exports the three main controller functions for use in the router.
+
+---
+
+## Summary Table
+| Function   | What it does                        | Returns           |
+|------------|-------------------------------------|-------------------|
+| getStats   | Returns dashboard statistics        | Stats object      |
+| getTasks   | Returns summary of tasks            | Array of tasks    |
+| getStock   | Returns product stock info          | Array of products |
+
+---
+
+## Notes
+- All functions use `try/catch` for error handling.
+- Role-based data filtering is performed in `getStats`.
+- Designed for dashboard widgets and analytics.

@@ -245,15 +245,20 @@ route.put('/api/orders/:id',
   orderController.updateOrder
 );
 
-route.patch('/api/orders/:id',
+// Approve and cancel order endpoints
+route.patch('/api/orders/:id/approve',
   checkPermission(MODULES.ORDERS, ACTIONS.UPDATE),
-  orderController.updateOrder
+  orderController.approveOrder
 );
 
-route.delete('/api/orders/:id',
-  checkPermission(MODULES.ORDERS, ACTIONS.DELETE),
-  orderController.deleteOrder
+route.patch('/api/orders/:id/cancel',
+  checkPermission(MODULES.ORDERS, ACTIONS.UPDATE),
+  orderController.cancelOrder
 );
+
+// Assign and advance order endpoints
+route.patch('/api/orders/:id/assign', orderController.assignOrder);
+route.patch('/api/orders/:id/advance', orderController.advanceOrderStatus);
 
 // Role management routes (superadmin only)
 route.post('/api/roles', checkPermission(MODULES.USERS, ACTIONS.MANAGE), roleController.createRole);
@@ -343,5 +348,34 @@ route.post('/login', loginValidation, async (req, res) => {
     });
   }
 });
+
+// Task routes (mount all task-related endpoints under /api)
+route.use('/api', taskRoutes);
+
+// Approve, advance, createDO, and generateInvoice routes for purchase orders
+route.patch('/api/purchase-orders/:id/approve',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.approve
+);
+
+route.patch('/api/purchase-orders/:id/advance',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.advanceStatus
+);
+
+route.patch('/api/purchase-orders/:id/do',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.createDO
+);
+
+route.patch('/api/purchase-orders/:id/invoice',
+  checkPermission(MODULES.PURCHASE_ORDERS, ACTIONS.UPDATE),
+  purchaseOrderController.generateInvoice
+);
+
+// Dashboard routes
+route.get('/api/dashboard/stats', dashboardController.getStats);
+route.get('/api/dashboard/tasks', dashboardController.getTasks);
+route.get('/api/dashboard/stock', dashboardController.getStock);
 
 module.exports = route;
